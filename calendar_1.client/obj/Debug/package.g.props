@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <PackageJsonName Condition="$(PackageJsonName) == ''">calendar_1.client</PackageJsonName>
+    <PackageJsonPrivate Condition="$(PackageJsonPrivate) == ''">true</PackageJsonPrivate>
+    <PackageJsonVersion Condition="$(PackageJsonVersion) == ''">0.0.0</PackageJsonVersion>
+    <PackageJsonType Condition="$(PackageJsonType) == ''">module</PackageJsonType>
+    <PackageJsonScriptsDev Condition="$(PackageJsonScriptsDev) == ''">vite</PackageJsonScriptsDev>
+    <PackageJsonScriptsBuild Condition="$(PackageJsonScriptsBuild) == ''">vite build</PackageJsonScriptsBuild>
+    <PackageJsonScriptsLint Condition="$(PackageJsonScriptsLint) == ''">oxlint</PackageJsonScriptsLint>
+    <PackageJsonScriptsPreview Condition="$(PackageJsonScriptsPreview) == ''">vite preview</PackageJsonScriptsPreview>
+    <PackageJsonDependenciesDateFns Condition="$(PackageJsonDependenciesDateFns) == ''">^4.4.0</PackageJsonDependenciesDateFns>
+    <PackageJsonDependenciesMoment Condition="$(PackageJsonDependenciesMoment) == ''">^2.30.1</PackageJsonDependenciesMoment>
+    <PackageJsonDependenciesReact Condition="$(PackageJsonDependenciesReact) == ''">^19.2.8</PackageJsonDependenciesReact>
+    <PackageJsonDependenciesReactBigCalendar Condition="$(PackageJsonDependenciesReactBigCalendar) == ''">^1.20.0</PackageJsonDependenciesReactBigCalendar>
+    <PackageJsonDependenciesReactDom Condition="$(PackageJsonDependenciesReactDom) == ''">^19.2.8</PackageJsonDependenciesReactDom>
+    <PackageJsonDevdependenciesTypesReact Condition="$(PackageJsonDevdependenciesTypesReact) == ''">^19.2.18</PackageJsonDevdependenciesTypesReact>
+    <PackageJsonDevdependenciesTypesReactDom Condition="$(PackageJsonDevdependenciesTypesReactDom) == ''">^19.2.4</PackageJsonDevdependenciesTypesReactDom>
+    <PackageJsonDevdependenciesVitejsPluginReact Condition="$(PackageJsonDevdependenciesVitejsPluginReact) == ''">^6.1.0</PackageJsonDevdependenciesVitejsPluginReact>
+    <PackageJsonDevdependenciesOxlint Condition="$(PackageJsonDevdependenciesOxlint) == ''">^1.79.0</PackageJsonDevdependenciesOxlint>
+    <PackageJsonDevdependenciesVite Condition="$(PackageJsonDevdependenciesVite) == ''">^8.2.2</PackageJsonDevdependenciesVite>
+  </PropertyGroup>
+</Project>
