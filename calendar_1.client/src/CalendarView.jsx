@@ -61,7 +61,7 @@ export default function CalendarView() {
         return newDate;
     };
 
-    // Combines Create and Edit updates
+    // Create and Edit updates
     const handleSaveEvent = () => {
         if (!newEventTitle.trim()) return;
 
@@ -182,7 +182,7 @@ export default function CalendarView() {
                     ) : (
                         <>
                             <h3 style={{ margin: '0 0 5px 0', color: '#0078d4' }}>{editingEvent?.title}</h3>
-                            <p style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '500', color: '#444' }}>📍 {editingEvent?.room || 'No Room Assigned'}</p>
+                            <p style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '500', color: '#444' }}>Room: {editingEvent?.room || 'No Room Assigned'}</p>
 
                             <div style={{ margin: '15px 0', fontSize: '13px', background: '#eee', padding: '8px', borderRadius: '4px' }}>
                                 <div> <strong>Date:</strong> {dateStr}</div>
