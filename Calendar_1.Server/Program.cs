@@ -7,10 +7,20 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var app = builder.Build();
 
-app.UseDefaultFiles();
-app.UseStaticFiles();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ReactPolicy", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:59985")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
+
+var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -19,7 +29,17 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+
+// 1. Enable CORS right at the beginning of the pipeline
+app.UseCors("ReactPolicy");
+
+// 2. Serve your React frontend static files
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+
+
+//app.UseHttpsRedirection();
 
 app.UseAuthorization();
 

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -6,17 +6,9 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 const localizer = momentLocalizer(moment);
 
 export default function CalendarView() {
-    const [events, setEvents] = useState([
-        {
-            title: 'Project Kickoff',
-            room: 'Conference Room A',
-            start: new Date(2026, 8, 4, 10, 0),
-            end: new Date(2026, 8, 4, 11, 30),
-        }
-    ]);
-
+    const [events, setEvents] = useState([]);
     const [currentView, setCurrentView] = useState('month');
-    const [currentDate, setCurrentDate] = useState(new Date(2026, 8, 4));
+    const [currentDate, setCurrentDate] = useState(new Date());
     const [isOpen, setIsOpen] = useState(false);
 
     // Form inputs
@@ -29,20 +21,49 @@ export default function CalendarView() {
     // UI state trackers
     const [editingEvent, setEditingEvent] = useState(null);
     const [isEditMode, setIsEditMode] = useState(false);
+    useEffect(() => {
+        fetch('http://localhost:5247/api/Events')
+            .then((res) => res.json())
+            .then((data) => {
+                const parsedEvents = data.map((item) => {
+                    const [startStr, endStr] = item.event_time.split(' - ');
 
-    // Open form for a blank slot selection
+                    // Extracts the ISO string prefix (YYYY-MM-DD) cleanly
+                    const dateOnlyStr = item.event_date.includes('T')
+                        ? item.event_date.split('T')[0]
+                        : item.event_date;
+
+                    return {
+                        id: item.id,
+                        title: item.title,
+                        room: item.room,
+                        start: new Date(`${dateOnlyStr}T${startStr || '00:00'}:00`),
+                        end: new Date(`${dateOnlyStr}T${endStr || '00:00'}:00`),
+                    };
+                });
+                setEvents(parsedEvents);
+            })
+            .catch((err) => console.error("Error loading events:", err));
+    }, []);
     const handleSelectSlot = (slotInfo) => {
         setEditingEvent(null);
         setIsEditMode(true);
         setSelectedSlot(slotInfo);
         setNewEventTitle('');
         setNewEventRoom('');
-        setStartTime(moment(slotInfo.start).format('HH:mm'));
-        setEndTime(moment(slotInfo.end).format('HH:mm'));
+
+        const startMoment = moment(slotInfo.start);
+        let endMoment = moment(slotInfo.end);
+
+        if (slotInfo.action === 'click' || endMoment.diff(startMoment, 'hours') >= 24) {
+            endMoment = startMoment.clone().add(1, 'hour');
+        }
+
+        setStartTime(startMoment.format('HH:mm'));
+        setEndTime(endMoment.format('HH:mm'));
         setIsOpen(true);
     };
 
-    // Open information view for an existing item
     const handleSelectEvent = (event) => {
         setEditingEvent(event);
         setIsEditMode(false);
@@ -53,7 +74,6 @@ export default function CalendarView() {
         setIsOpen(true);
     };
 
-    // Merges HH:mm picker values back into standard JS Dates
     const mergeDateTime = (baseDate, timeString) => {
         const [hours, minutes] = timeString.split(':').map(Number);
         const newDate = new Date(baseDate);
@@ -61,7 +81,6 @@ export default function CalendarView() {
         return newDate;
     };
 
-    // Create and Edit updates
     const handleSaveEvent = () => {
         if (!newEventTitle.trim()) return;
 
@@ -69,29 +88,70 @@ export default function CalendarView() {
         const finalStart = mergeDateTime(baseDate, startTime);
         const finalEnd = mergeDateTime(baseDate, endTime);
 
+        const payload = {
+            id: editingEvent ? editingEvent.id : 0,
+            title: newEventTitle,
+            event_date: moment(finalStart).format('YYYY-MM-DD'),
+            room: newEventRoom,
+            event_time: `${startTime} - ${endTime}`
+        };
+
         if (editingEvent) {
-            setEvents((prev) =>
-                prev.map((evt) =>
-                    evt.title === editingEvent.title && evt.start.getTime() === editingEvent.start.getTime()
-                        ? { ...evt, title: newEventTitle, room: newEventRoom, start: finalStart, end: finalEnd }
-                        : evt
-                )
-            );
+            fetch(`http://localhost:5247/api/Events/update/${editingEvent.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            })
+                .then((res) => {
+                    if (res.ok) {
+                        setEvents((prev) =>
+                            prev.map((evt) =>
+                                evt.id === editingEvent.id
+                                    ? { ...evt, title: newEventTitle, room: newEventRoom, start: finalStart, end: finalEnd }
+                                    : evt
+                            )
+                        );
+                        closeModal();
+                    }
+                })
+                .catch((err) => console.error("Error updating record:", err));
         } else if (selectedSlot) {
-            setEvents((prev) => [
-                ...prev,
-                { title: newEventTitle, room: newEventRoom, start: finalStart, end: finalEnd }
-            ]);
+            fetch('http://localhost:5247/api/Events/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    setEvents((prev) => [
+                        ...prev,
+                        {
+                            id: data.id,
+                            title: newEventTitle,
+                            room: newEventRoom,
+                            start: finalStart,
+                            end: finalEnd,
+                        },
+                    ]);
+                    closeModal();
+                })
+                .catch((err) => console.error("Error creating record:", err));
         }
-        closeModal();
     };
+
     const handleDeleteEvent = () => {
         if (editingEvent) {
-            setEvents((prev) =>
-                prev.filter((evt) => evt.title !== editingEvent.title || evt.start.getTime() !== editingEvent.start.getTime())
-            );
+            fetch(`http://localhost:5247/api/Events/delete/${editingEvent.id}`, {
+                method: 'DELETE',
+            })
+                .then((res) => {
+                    if (res.ok) {
+                        setEvents((prev) => prev.filter((evt) => evt.id !== editingEvent.id));
+                        closeModal();
+                    }
+                })
+                .catch((err) => console.error("Error deleting row:", err));
         }
-        closeModal();
     };
 
     const closeModal = () => {
@@ -101,7 +161,6 @@ export default function CalendarView() {
         setIsEditMode(false);
     };
 
-    // Modal time viewer helpers
     const activeStart = editingEvent ? editingEvent.start : selectedSlot?.start;
     const activeEnd = editingEvent ? editingEvent.end : selectedSlot?.end;
     const dateStr = activeStart ? moment(activeStart).format('MMMM Do, YYYY') : '';
@@ -123,7 +182,7 @@ export default function CalendarView() {
                 selectable={true}
                 onSelectSlot={handleSelectSlot}
                 onSelectEvent={handleSelectEvent}
-                titleAccessor={(event) => event.room ? `${event.title} (${event.room})` : event.title}
+                titleAccessor={(event) => (event.room ? `${event.title} (${event.room})` : event.title)}
                 style={{ height: 'calc(100% - 40px)' }}
             />
 
@@ -175,7 +234,7 @@ export default function CalendarView() {
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                                <button onClick={() => editingEvent ? setIsEditMode(false) : closeModal()} style={{ padding: '6px 12px', background: '#ccc', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
+                                <button onClick={() => (editingEvent ? setIsEditMode(false) : closeModal())} style={{ padding: '6px 12px', background: '#ccc', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
                                 <button onClick={handleSaveEvent} style={{ padding: '6px 12px', background: '#0078d4', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Save</button>
                             </div>
                         </>
